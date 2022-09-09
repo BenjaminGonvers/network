@@ -29,10 +29,11 @@ add_custom_target(
         DataTarget-${EXECUTABLE_CUSTOM_NAME}
         DEPENDS ${DATA_BINARY_FILES} ${DATA_FILES})
 
-# Get SFML and box2d libraries
+# Get SFML and im imGui libraries
 find_package(OpenGL REQUIRED)
 find_package(SFML COMPONENTS system window graphics main CONFIG REQUIRED)
-find_package(box2d CONFIG REQUIRED)
+find_package(imgui CONFIG REQUIRED)
+find_package(ImGui-SFML CONFIG REQUIRED)
 include_directories(include/)
 
 # Add source to this project's executable.  
@@ -54,4 +55,5 @@ else()
 target_link_libraries(${EXECUTABLE_CUSTOM_NAME} PRIVATE X11 FLAC UDev OpenAL  ${OPENGL_LIBRARIES} )
 endif()
 
-target_link_libraries(${EXECUTABLE_CUSTOM_NAME} PRIVATE box2d::box2d)
+target_link_libraries(${EXECUTABLE_CUSTOM_NAME} PRIVATE imgui::imgui)
+target_link_libraries(${EXECUTABLE_CUSTOM_NAME} PRIVATE ImGui-SFML::ImGui-SFML)
