@@ -5,11 +5,13 @@
 #include <Player.h>
 #include <Package.h>
 #include <ConnectionPack .h>
+#include <iostream>
 
 #include "imgui-SFML.h"
 #include "SFML/Graphics/RenderWindow.hpp"
 #include "SFML/Window/Event.hpp"
 #include "SFML/Window/VideoMode.hpp"
+#include "MovePack.h"
 
 class Game
 {
@@ -38,7 +40,11 @@ public:
 	bool haveTakeName = false;
 
 	bool playerHaveAction = false;
+	bool AdversaryHavePlayed = false;
+	bool SendYourMove = false;
+
 	Player::ActionType playerAction = Player::nothing;
+	Player::ActionType AdversaryAction = Player::nothing;
 };
 
 
@@ -57,6 +63,8 @@ inline bool Game::gameLoop()
 	sf::Clock deltaClock;
 	
 	sf::Packet packet;
+	sf::Packet sendingPacket;
+	sf::Packet incomingPacket;
 
 	while (window.isOpen()) {
 		sf::Event event;
@@ -88,22 +96,38 @@ inline bool Game::gameLoop()
 						Package package;
 						packet >> package;
 						_playerNumber = package._player;
+						if(_playerNumber == Package::Player1)
+						{
+							std::cout << "je suis player1\n";
+						}
+						else if(_playerNumber == Package::Player2)
+						{
+							std::cout << "je suis player2\n";
+						}else
+						{
+							std::cout << "packet de merde";
+						}
+						packet.clear();
 						serverConfirm = true;
 
-						ConnectionPack ConPackage;
-						ConPackage._player = _playerNumber;
-						ConPackage._playerName = player._name;
-						ConPackage._type = ConnectionPack::connect;
-						packet << ConPackage;
+						if (_playerNumber == Package::Player1) {
+							ConnectionPack ConPackage;
+							ConPackage._player = _playerNumber;
+							ConPackage._playerName = player._name;
+							ConPackage._type = ConnectionPack::connect;
+							packet << ConPackage;
+						}
 
 					}
 
 				}else
 				{
 					if (!playerConfirm) {
-						if (_playerNumber == Package::Player1) {
+						if (_playerNumber == Package::Player1)
+						{
 							if (_socket.send(packet) == sf::Socket::Done)
 							{
+								packet.clear();
 								playerConfirm = true;
 							}
 						}
@@ -114,6 +138,7 @@ inline bool Game::gameLoop()
 								ConnectionPack package;
 								packet >> package;
 								Adversary._name = package._playerName;
+								packet.clear();
 
 								ConnectionPack ConPackage;
 								ConPackage._player = _playerNumber;
@@ -130,6 +155,7 @@ inline bool Game::gameLoop()
 						if (_playerNumber != Package::Player1) {
 							if (_socket.send(packet) == sf::Socket::Done)
 							{
+								packet.clear();
 								alreadyConfirm = true;
 							}
 						}
@@ -140,6 +166,7 @@ inline bool Game::gameLoop()
 								ConnectionPack package;
 								packet >> package;
 								Adversary._name = package._playerName;
+								packet.clear();
 								alreadyConfirm = true;
 							}
 						}
@@ -147,19 +174,107 @@ inline bool Game::gameLoop()
 				}
 			}
 
-			if(!playerHaveAction && alreadyConfirm)
+			if (alreadyConfirm)
 			{
 				ImGui::TextWrapped(player._name.data());
 				ImGui::Text(std::to_string(player.PV).data());
 				ImGui::TextWrapped(Adversary._name.data());
 				ImGui::Text(std::to_string(Adversary.PV).data());
 
-				playerAction = player.printAction();
-				if (playerAction != Player::nothing)
+				if(AdversaryHavePlayed)
 				{
-					playerHaveAction = true;
+					ImGui::Text("your adversary have played");
 				}
 
+				if (!playerHaveAction)
+				{
+
+					playerAction = player.printAction();
+					if (playerAction != Player::nothing)
+					{
+						playerHaveAction = true;
+
+						MovePack package;
+						package._player = _playerNumber;
+						package._action = playerAction;
+
+						sendingPacket << package;
+
+					}
+
+				}else
+				{
+					ImGui::Text("you have played");
+
+					if(!SendYourMove)
+					{
+						if(_socket.send(sendingPacket) == sf::Socket::Done)
+						{
+							sendingPacket.clear();
+							SendYourMove = true;
+						}
+					}
+				}
+
+				if(!AdversaryHavePlayed)
+				{
+					if(_socket.receive(incomingPacket)== sf::Socket::Done)
+					{
+						MovePack package;
+						incomingPacket >> package;
+						AdversaryAction = package._action;
+						incomingPacket.clear();
+						AdversaryHavePlayed = true;
+					}
+				}
+
+				if(AdversaryHavePlayed  && SendYourMove)
+				{
+					switch (playerAction)
+					{
+					case Player::strike:
+						if (AdversaryAction == Player::strike) {
+							player.PV -= 25;
+							Adversary.PV -= 25;
+						}
+
+						if (AdversaryAction == Player::block)
+							Adversary.PV -= 10;
+						
+						if (AdversaryAction == Player::counterStrike)
+							player.PV -= 25;
+						break;
+					case Player::block:
+						if (AdversaryAction == Player::strike)
+							player.PV -= 10;
+						if (AdversaryAction == Player::counterStrike) {
+							Adversary.PV -= 25;
+							player.PV -= 10;
+						}
+						break;
+					case Player::counterStrike:
+						if (AdversaryAction == Player::strike)
+							Adversary.PV -= 25;
+
+						if (AdversaryAction == Player::block) {
+							player.PV -= 25;
+							Adversary.PV -= 10;
+						}
+
+						if (AdversaryAction == Player::counterStrike) {
+							Adversary.PV -= 10;
+							player.PV -= 10;
+						}
+					}
+
+					AdversaryHavePlayed = false;
+					playerHaveAction = false;
+					SendYourMove = false;
+					playerAction = Player::nothing;
+					AdversaryAction = Player::nothing;
+
+
+				}
 			}
 			
 		}

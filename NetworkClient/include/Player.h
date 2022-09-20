@@ -17,8 +17,7 @@ public:
 		nothing,
 		strike,
 		block,
-		cunterStrike,
-		avoid
+		counterStrike
 	};
 
 	ActionType printAction();
@@ -48,14 +47,9 @@ inline Player::ActionType Player::printAction()
 		return block;
 	}
 
-	if(ImGui::Button("CunterStrike"))
+	if(ImGui::Button("CounterStrike"))
 	{
-		return cunterStrike;
-	}
-
-	if(ImGui::Button("Avoid"))
-	{
-		return avoid;
+		return counterStrike;
 	}
 
 	return nothing;

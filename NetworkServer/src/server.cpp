@@ -61,10 +61,10 @@ void Server::sendPlayerStart()
 	packetP1 << &packageP1;
 	clientP1.send(packetP1);
 
-	Package packageP2(Package::PackageType::firstConnect, Package::PlayerNumber::Player1);
+	Package packageP2(Package::PackageType::firstConnect, Package::PlayerNumber::Player2);
 	sf::Packet packetP2;
-	packetP1 << &packageP2;
-	clientP1.send(packetP2);
+	packetP2 << &packageP2;
+	clientP2.send(packetP2);
 
 }
 
@@ -73,9 +73,9 @@ void Server::ConfirmePlayerStart()
 	bool player1Confirm = false;
 	bool player2Confirm = false;
 
-	while (!player1Confirm && !player2Confirm)
+	while (!player1Confirm || !player2Confirm)
 	{
-		if (_selector.wait()) {
+		if (_selector.wait(sf::seconds(10.0f))) {
 			if (_selector.isReady(clientP1)&& !player1Confirm)
 			{
 				std::cout << "receive client p1\n";
@@ -84,6 +84,7 @@ void Server::ConfirmePlayerStart()
 				std::cout << "send client p2\n";
 				clientP2.send(packet);
 				std::cout << "send client succesfull p2\n";
+				packet.clear();
 				player1Confirm = true;
 			}
 			if (_selector.isReady(clientP2) && !player2Confirm)
@@ -94,6 +95,7 @@ void Server::ConfirmePlayerStart()
 				std::cout << "send client p1\n";
 				clientP1.send(packet);
 				std::cout << "send client succesfull p1\n";
+				packet.clear();
 				player2Confirm = true;
 			}
 
@@ -111,12 +113,14 @@ void Server::waitToRecieve()
 			sf::Packet packet;
 			clientP1.receive(packet);
 			clientP2.send(packet);
+			packet.clear();
 		}
 		if (_selector.isReady(clientP2))
 		{
 			sf::Packet packet;
 			clientP2.receive(packet);
 			clientP1.send(packet);
+			packet.clear();
 		}
 
 	}

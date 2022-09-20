@@ -26,8 +26,9 @@ inline sf::Packet& operator >>(sf::Packet& packet, ConnectionPack& package)
 	int type = 0;
 	packet >> type;
 	package._type = static_cast<Package::PackageType>(type);
-	packet >> type;
-	package._player = static_cast<Package::PlayerNumber>(type);
+	int player = 0;
+	packet >> player;
+	package._player = static_cast<Package::PlayerNumber>(player);
 	packet >> package._playerName;
 	return packet;
 }

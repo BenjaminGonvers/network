@@ -41,6 +41,9 @@ inline sf::Packet& operator >>(sf::Packet& packet, Package& package)
 	int type = 0;
 	packet >> type;
 	package._type = static_cast<Package::PackageType>(type);
+	int player = 0;
+	packet >> player;
+	package._player = static_cast<Package::PlayerNumber>(type);
 	return packet;
 }
 
